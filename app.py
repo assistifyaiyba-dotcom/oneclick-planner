@@ -21,6 +21,7 @@ BASE_URL          = os.environ.get("BASE_URL", "https://oneclick.up.railway.app"
 META_APP_ID       = os.environ.get("META_APP_ID", "2063582944215113")
 META_APP_SECRET   = os.environ.get("META_APP_SECRET", "6de7e70cfe1585e840c71a5e956b3dd7")
 TIKTOK_CLIENT_KEY = os.environ.get("TIKTOK_CLIENT_KEY", "awqonr7yi3ykhomu")
+META_CONFIG_ID    = os.environ.get("META_CONFIG_ID", "818172838011332")
 TIKTOK_SECRET     = os.environ.get("TIKTOK_CLIENT_SECRET", "UPrtHs9QQ6j5rQPlX91SmyQvjhYUe878")
 CLOUDINARY_CLOUD  = os.environ.get("CLOUDINARY_CLOUD_NAME", "dlv8ebddq")
 CLOUDINARY_KEY    = os.environ.get("CLOUDINARY_API_KEY", "837591974475139")
@@ -200,7 +201,7 @@ def instagram_auth(user_id):
     params = {
         "client_id": META_APP_ID,
         "redirect_uri": f"{BASE_URL}/instagram/callback",
-        "scope": "instagram_content_publish,pages_show_list,pages_read_engagement",
+        "config_id": META_CONFIG_ID,
         "response_type": "code",
         "state": user_id,
     }
@@ -258,7 +259,7 @@ def facebook_auth(user_id):
     params = {
         "client_id": META_APP_ID,
         "redirect_uri": f"{BASE_URL}/facebook/callback",
-        "scope": "pages_manage_posts,pages_read_engagement,pages_show_list",
+        "config_id": META_CONFIG_ID,
         "response_type": "code",
         "state": user_id,
     }

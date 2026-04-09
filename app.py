@@ -200,7 +200,7 @@ def instagram_auth(user_id):
     params = {
         "client_id": META_APP_ID,
         "redirect_uri": f"{BASE_URL}/instagram/callback",
-        "scope": "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement",
+        "scope": "instagram_content_publish,pages_show_list,pages_read_engagement,business_management",
         "response_type": "code",
         "state": user_id,
     }

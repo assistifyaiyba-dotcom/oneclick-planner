@@ -179,6 +179,39 @@
     </div>
   </div>
 
+  <!-- Manual Token Input -->
+  <div class="card" id="manualTokenCard" style="border: 1px solid #fbbf24; background: #fffbeb;">
+    <div class="card-title" style="color:#92400e;">Developer Mode — Manual Token</div>
+    <form id="manualTokenForm">
+      <div class="form-row">
+        <label>Instagram User ID</label>
+        <input type="text" id="ig_user_id" placeholder="z.B. 26327994056810336" value="{{ user.ig_user_id or '' }}">
+      </div>
+      <div class="form-row">
+        <label>Instagram Access Token</label>
+        <input type="text" id="ig_token" placeholder="EAAd..." value="{{ user.ig_token or '' }}">
+      </div>
+      <div class="form-row">
+        <label>Instagram Username</label>
+        <input type="text" id="ig_username" placeholder="@username" value="{{ user.ig_username or '' }}">
+      </div>
+      <div class="form-row">
+        <label>Facebook Page ID</label>
+        <input type="text" id="fb_page_id" placeholder="z.B. 1082532968267674" value="{{ user.fb_page_id or '' }}">
+      </div>
+      <div class="form-row">
+        <label>Facebook Page Token</label>
+        <input type="text" id="fb_page_token" placeholder="EAAd..." value="{{ user.fb_page_token or '' }}">
+      </div>
+      <div class="form-row">
+        <label>Facebook Page Name</label>
+        <input type="text" id="fb_page_name" placeholder="z.B. Assistify AI" value="{{ user.fb_page_name or '' }}">
+      </div>
+      <button type="submit" class="btn-plan" style="background:#92400e;">Save Tokens</button>
+      <div class="success-msg" id="tokenSuccess">Tokens saved!</div>
+    </form>
+  </div>
+
   <!-- Upload Videos -->
   <div class="card">
     <div class="card-title">Upload Videos</div>
@@ -293,6 +326,25 @@ function setCaptionMode(mode, el) {
   document.getElementById('captionMode').value = mode;
   document.getElementById('captionTextBox').style.display = mode === 'ai' ? 'none' : 'block';
 }
+
+// Manual token form
+document.getElementById('manualTokenForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const res = await fetch(`/tokens/${USER_ID}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ig_user_id:   document.getElementById('ig_user_id').value,
+      ig_token:     document.getElementById('ig_token').value,
+      ig_username:  document.getElementById('ig_username').value,
+      fb_page_id:   document.getElementById('fb_page_id').value,
+      fb_page_token:document.getElementById('fb_page_token').value,
+      fb_page_name: document.getElementById('fb_page_name').value,
+    })
+  });
+  document.getElementById('tokenSuccess').style.display = 'block';
+  setTimeout(() => { document.getElementById('tokenSuccess').style.display = 'none'; location.reload(); }, 1500);
+});
 
 // Settings form
 document.getElementById('settingsForm').addEventListener('submit', async e => {

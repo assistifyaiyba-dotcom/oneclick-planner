@@ -372,6 +372,20 @@ def save_settings(user_id):
     )
     return jsonify({"status": "saved"})
 
+# ─── MANUAL TOKEN ─────────────────────────────────────────────────────────────
+@app.route("/tokens/<user_id>", methods=["POST"])
+def save_tokens(user_id):
+    data = request.json or {}
+    update_user(user_id,
+        ig_user_id   = data.get("ig_user_id", ""),
+        ig_token     = data.get("ig_token", ""),
+        ig_username  = data.get("ig_username", ""),
+        fb_page_id   = data.get("fb_page_id", ""),
+        fb_page_token= data.get("fb_page_token", ""),
+        fb_page_name = data.get("fb_page_name", ""),
+    )
+    return jsonify({"status": "saved"})
+
 # ─── MANUAL TRIGGER ───────────────────────────────────────────────────────────
 @app.route("/post_now/<user_id>")
 def post_now(user_id):

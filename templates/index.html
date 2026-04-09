@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One-Click Planner</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background: #fff; color: #111; min-height: 100vh;
+         display: flex; align-items: center; justify-content: center; }
+  .hero { text-align: center; max-width: 520px; padding: 40px 20px; }
+  h1 { font-size: 2.4rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 16px; }
+  p  { color: #666; font-size: 1.1rem; line-height: 1.6; margin-bottom: 40px; }
+  .btn { display: inline-block; background: #111; color: #fff; padding: 16px 40px;
+         border-radius: 12px; font-size: 1rem; font-weight: 600; text-decoration: none;
+         transition: opacity .2s; }
+  .btn:hover { opacity: .8; }
+  .steps { display: flex; gap: 24px; margin-top: 48px; text-align: left; }
+  .step { flex: 1; }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; background: #f0f0f0;
+              display: flex; align-items: center; justify-content: center;
+              font-size: .8rem; font-weight: 700; margin-bottom: 10px; }
+  .step h3 { font-size: .95rem; font-weight: 600; margin-bottom: 4px; }
+  .step p  { font-size: .85rem; color: #888; margin: 0; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>Plan 30 days of content in one click.</h1>
+  <p>Connect your accounts, upload your videos, set your time — done. We post for you every day.</p>
+  <a href="/new" class="btn">Get started free →</a>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Connect</h3>
+      <p>Instagram, Facebook & TikTok in seconds</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Upload</h3>
+      <p>Drag & drop up to 30 videos at once</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Plan</h3>
+      <p>One click — posts daily at your chosen time</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

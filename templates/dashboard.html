@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard – One-Click Planner</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background: #f8f8f8; color: #111; min-height: 100vh; }
+  .nav { background: #fff; border-bottom: 1px solid #eee; padding: 0 32px;
+         height: 56px; display: flex; align-items: center; justify-content: space-between; }
+  .nav-brand { font-weight: 700; font-size: 1rem; }
+  .nav-id { font-size: .8rem; color: #999; font-family: monospace; }
+  .container { max-width: 720px; margin: 0 auto; padding: 32px 20px; }
+
+  .card { background: #fff; border-radius: 16px; padding: 28px; margin-bottom: 20px;
+          border: 1px solid #eee; }
+  .card-title { font-size: .75rem; font-weight: 700; text-transform: uppercase;
+                letter-spacing: .08em; color: #999; margin-bottom: 20px; }
+
+  /* Connect buttons */
+  .platform { display: flex; align-items: center; justify-content: space-between;
+               padding: 14px 0; border-bottom: 1px solid #f0f0f0; }
+  .platform:last-child { border-bottom: none; padding-bottom: 0; }
+  .platform-info { display: flex; align-items: center; gap: 12px; }
+  .platform-icon { width: 36px; height: 36px; border-radius: 10px;
+                   display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+  .ig-icon { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+  .fb-icon { background: #1877f2; }
+  .tt-icon { background: #000; }
+  .platform-name { font-weight: 600; font-size: .95rem; }
+  .platform-status { font-size: .8rem; color: #999; margin-top: 2px; }
+  .connected { color: #22c55e !important; }
+
+  .btn-connect { background: #111; color: #fff; border: none; padding: 8px 18px;
+                 border-radius: 8px; font-size: .85rem; font-weight: 600; cursor: pointer;
+                 text-decoration: none; display: inline-block; }
+  .btn-disconnect { background: #f5f5f5; color: #666; border: none; padding: 8px 18px;
+                    border-radius: 8px; font-size: .85rem; cursor: pointer;
+                    text-decoration: none; display: inline-block; }
+
+  /* Upload */
+  .upload-zone { border: 2px dashed #e0e0e0; border-radius: 12px; padding: 40px;
+                 text-align: center; cursor: pointer; transition: border-color .2s;
+                 position: relative; }
+  .upload-zone:hover, .upload-zone.dragover { border-color: #111; }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .upload-icon { font-size: 2rem; margin-bottom: 12px; }
+  .upload-text { font-size: .95rem; color: #666; }
+  .upload-text strong { color: #111; }
+  .upload-progress { margin-top: 16px; display: none; }
+  .progress-bar { height: 4px; background: #f0f0f0; border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #111; width: 0%; transition: width .3s; }
+  .upload-result { margin-top: 12px; font-size: .85rem; color: #22c55e; display: none; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 2rem; font-weight: 700; }
+  .stat-label { font-size: .8rem; color: #999; margin-top: 4px; }
+
+  /* Settings */
+  .form-row { margin-bottom: 20px; }
+  .form-row label { display: block; font-size: .8rem; font-weight: 600; color: #666;
+                    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; padding: 10px 14px; border: 1px solid #e5e5e5; border-radius: 8px;
+    font-size: .95rem; font-family: inherit; outline: none; transition: border-color .2s; }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color: #111; }
+  .form-row textarea { height: 80px; resize: vertical; }
+
+  .caption-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+  .toggle-btn { flex: 1; padding: 8px; border: 1px solid #e5e5e5; border-radius: 8px;
+                background: #fff; cursor: pointer; font-size: .85rem; font-weight: 600;
+                text-align: center; transition: all .2s; }
+  .toggle-btn.active { background: #111; color: #fff; border-color: #111; }
+
+  .platforms-grid { display: flex; gap: 10px; }
+  .platform-check { flex: 1; }
+  .platform-check input { display: none; }
+  .platform-check label { display: flex; align-items: center; justify-content: center; gap: 8px;
+                          padding: 10px; border: 1px solid #e5e5e5; border-radius: 8px;
+                          cursor: pointer; font-size: .85rem; font-weight: 600; transition: all .2s; }
+  .platform-check input:checked + label { background: #111; color: #fff; border-color: #111; }
+
+  .btn-plan { width: 100%; padding: 16px; background: #111; color: #fff; border: none;
+              border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer;
+              transition: opacity .2s; margin-top: 8px; }
+  .btn-plan:hover { opacity: .85; }
+  .btn-plan:disabled { opacity: .4; cursor: not-allowed; }
+
+  .success-msg { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;
+                 padding: 12px 16px; font-size: .9rem; color: #166534; margin-top: 16px;
+                 display: none; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="nav-brand">One-Click Planner</span>
+  <span class="nav-id">ID: {{ user.id }}</span>
+</nav>
+
+<div class="container">
+
+  <!-- Stats -->
+  <div class="card">
+    <div class="card-title">Queue Status</div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num">{{ pending }}</div>
+        <div class="stat-label">Pending</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">{{ posted }}</div>
+        <div class="stat-label">Posted</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">{{ total }}</div>
+        <div class="stat-label">Total</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connect Accounts -->
+  <div class="card">
+    <div class="card-title">Connected Accounts</div>
+
+    <div class="platform">
+      <div class="platform-info">
+        <div class="platform-icon ig-icon">📷</div>
+        <div>
+          <div class="platform-name">Instagram</div>
+          <div class="platform-status {% if user.ig_username %}connected{% endif %}">
+            {% if user.ig_username %}✓ @{{ user.ig_username }}{% else %}Not connected{% endif %}
+          </div>
+        </div>
+      </div>
+      {% if user.ig_token %}
+        <a href="/disconnect/{{ user.id }}/instagram" class="btn-disconnect">Disconnect</a>
+      {% else %}
+        <a href="/instagram/auth/{{ user.id }}" class="btn-connect">Connect</a>
+      {% endif %}
+    </div>
+
+    <div class="platform">
+      <div class="platform-info">
+        <div class="platform-icon fb-icon">📘</div>
+        <div>
+          <div class="platform-name">Facebook</div>
+          <div class="platform-status {% if user.fb_page_name %}connected{% endif %}">
+            {% if user.fb_page_name %}✓ {{ user.fb_page_name }}{% else %}Not connected{% endif %}
+          </div>
+        </div>
+      </div>
+      {% if user.fb_page_token %}
+        <a href="/disconnect/{{ user.id }}/facebook" class="btn-disconnect">Disconnect</a>
+      {% else %}
+        <a href="/facebook/auth/{{ user.id }}" class="btn-connect">Connect</a>
+      {% endif %}
+    </div>
+
+    <div class="platform">
+      <div class="platform-info">
+        <div class="platform-icon tt-icon">🎵</div>
+        <div>
+          <div class="platform-name">TikTok</div>
+          <div class="platform-status {% if user.tiktok_token %}connected{% endif %}">
+            {% if user.tiktok_token %}✓ Connected{% else %}Not connected{% endif %}
+          </div>
+        </div>
+      </div>
+      {% if user.tiktok_token %}
+        <a href="/disconnect/{{ user.id }}/tiktok" class="btn-disconnect">Disconnect</a>
+      {% else %}
+        <a href="/tiktok/auth/{{ user.id }}" class="btn-connect">Connect</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Upload Videos -->
+  <div class="card">
+    <div class="card-title">Upload Videos</div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="video/*" multiple>
+      <div class="upload-icon">🎬</div>
+      <div class="upload-text"><strong>Click to upload</strong> or drag & drop<br>Up to 30 videos at once</div>
+    </div>
+    <div class="upload-progress" id="uploadProgress">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div style="font-size:.8rem;color:#666;margin-top:6px" id="progressText">Uploading...</div>
+    </div>
+    <div class="upload-result" id="uploadResult"></div>
+  </div>
+
+  <!-- Settings & Plan -->
+  <div class="card">
+    <div class="card-title">Schedule</div>
+    <form id="settingsForm">
+      <div class="form-row">
+        <label>Account Name</label>
+        <input type="text" name="name" value="{{ user.name or '' }}" placeholder="e.g. SpitalVerse">
+      </div>
+      <div class="form-row">
+        <label>Post Time (daily)</label>
+        <input type="time" name="post_time" value="{{ user.post_time or '19:00' }}">
+      </div>
+      <div class="form-row">
+        <label>Caption</label>
+        <div class="caption-toggle">
+          <div class="toggle-btn {% if user.caption_mode != 'ai' %}active{% endif %}"
+               onclick="setCaptionMode('fixed', this)">Write my own</div>
+          <div class="toggle-btn {% if user.caption_mode == 'ai' %}active{% endif %}"
+               onclick="setCaptionMode('ai', this)">AI generates ✨</div>
+        </div>
+        <input type="hidden" name="caption_mode" id="captionMode" value="{{ user.caption_mode or 'fixed' }}">
+        <div id="captionTextBox" {% if user.caption_mode == 'ai' %}style="display:none"{% endif %}>
+          <textarea name="caption_text" placeholder="Your caption text...">{{ user.caption_text or '' }}</textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Platforms</label>
+        <div class="platforms-grid">
+          <div class="platform-check">
+            <input type="checkbox" id="plat-ig" value="ig" {% if 'ig' in (user.platforms or 'ig,fb') %}checked{% endif %}>
+            <label for="plat-ig">📷 Instagram</label>
+          </div>
+          <div class="platform-check">
+            <input type="checkbox" id="plat-fb" value="fb" {% if 'fb' in (user.platforms or 'ig,fb') %}checked{% endif %}>
+            <label for="plat-fb">📘 Facebook</label>
+          </div>
+          <div class="platform-check">
+            <input type="checkbox" id="plat-tt" value="tt" {% if 'tt' in (user.platforms or '') %}checked{% endif %}>
+            <label for="plat-tt">🎵 TikTok</label>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-plan">Save Settings</button>
+      <div class="success-msg" id="settingsSuccess">Settings saved!</div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+const USER_ID = "{{ user.id }}";
+
+// Upload
+const zone = document.getElementById('uploadZone');
+const input = document.getElementById('fileInput');
+
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+input.addEventListener('change', e => handleFiles(e.target.files));
+
+async function handleFiles(files) {
+  if (!files.length) return;
+  const progress = document.getElementById('uploadProgress');
+  const fill = document.getElementById('progressFill');
+  const text = document.getElementById('progressText');
+  const result = document.getElementById('uploadResult');
+  progress.style.display = 'block';
+  result.style.display = 'none';
+
+  const formData = new FormData();
+  for (let f of files) formData.append('videos', f);
+
+  text.textContent = `Uploading ${files.length} video(s)...`;
+  fill.style.width = '30%';
+
+  const res = await fetch(`/upload/${USER_ID}`, { method: 'POST', body: formData });
+  fill.style.width = '100%';
+  const data = await res.json();
+
+  setTimeout(() => {
+    progress.style.display = 'none';
+    result.style.display = 'block';
+    result.textContent = `${data.uploaded}/${data.total} videos uploaded successfully!`;
+    location.reload();
+  }, 800);
+}
+
+// Caption toggle
+function setCaptionMode(mode, el) {
+  document.querySelectorAll('.caption-toggle .toggle-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('captionMode').value = mode;
+  document.getElementById('captionTextBox').style.display = mode === 'ai' ? 'none' : 'block';
+}
+
+// Settings form
+document.getElementById('settingsForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const platforms = Array.from(document.querySelectorAll('.platform-check input:checked'))
+                         .map(el => el.value).join(',');
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData.entries());
+  data.platforms = platforms;
+
+  const res = await fetch(`/settings/${USER_ID}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  document.getElementById('settingsSuccess').style.display = 'block';
+  setTimeout(() => document.getElementById('settingsSuccess').style.display = 'none', 3000);
+});
+</script>
+</body>
+</html>

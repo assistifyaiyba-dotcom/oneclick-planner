@@ -402,6 +402,21 @@ def queue_status(user_id):
         pending = db.execute("SELECT COUNT(*) FROM queue WHERE user_id=? AND posted=0", (user_id,)).fetchone()[0]
     return jsonify({"total": total, "pending": pending, "posted": total - pending})
 
+@app.route("/queue_list/<user_id>")
+def queue_list(user_id):
+    with get_db() as db:
+        items = db.execute(
+            "SELECT id, cloudinary_url, post_order, posted, posted_at FROM queue WHERE user_id=? ORDER BY post_order",
+            (user_id,)).fetchall()
+    return jsonify([dict(i) for i in items])
+
+@app.route("/queue_delete/<user_id>/<int:item_id>", methods=["DELETE"])
+def queue_delete(user_id, item_id):
+    with get_db() as db:
+        db.execute("DELETE FROM queue WHERE id=? AND user_id=?", (item_id, user_id))
+        db.commit()
+    return jsonify({"status": "deleted"})
+
 @app.route("/disconnect/<user_id>/<platform>")
 def disconnect(user_id, platform):
     fields = {"instagram": {"ig_token": None, "ig_user_id": None, "ig_username": None},

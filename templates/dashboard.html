@@ -179,6 +179,12 @@
     </div>
   </div>
 
+  <!-- Queue List -->
+  <div class="card">
+    <div class="card-title">Scheduled Videos</div>
+    <div id="queueList"><div style="color:#999;font-size:.85rem">Loading...</div></div>
+  </div>
+
   <!-- Manual Token Input -->
   <div class="card" id="manualTokenCard" style="border: 1px solid #fbbf24; background: #fffbeb;">
     <div class="card-title" style="color:#92400e;">Developer Mode — Manual Token</div>
@@ -326,6 +332,34 @@ function setCaptionMode(mode, el) {
   document.getElementById('captionMode').value = mode;
   document.getElementById('captionTextBox').style.display = mode === 'ai' ? 'none' : 'block';
 }
+
+// Queue list
+async function loadQueue() {
+  const res = await fetch(`/queue_list/${USER_ID}`);
+  const items = await res.json();
+  const el = document.getElementById('queueList');
+  if (!items.length) { el.innerHTML = '<div style="color:#999;font-size:.85rem">No videos in queue.</div>'; return; }
+  el.innerHTML = items.map(i => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;">
+      <div style="display:flex;align-items:center;gap:12px">
+        <video src="${i.cloudinary_url}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;"></video>
+        <div>
+          <div style="font-size:.85rem;font-weight:600">#${i.post_order}</div>
+          <div style="font-size:.75rem;color:${i.posted ? '#22c55e' : '#999'}">${i.posted ? '✓ Posted ' + (i.posted_at ? i.posted_at.slice(0,10) : '') : 'Pending'}</div>
+        </div>
+      </div>
+      <button onclick="deleteVideo(${i.id})" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:.8rem;">Delete</button>
+    </div>`).join('');
+}
+
+async function deleteVideo(id) {
+  if (!confirm('Delete this video?')) return;
+  await fetch(`/queue_delete/${USER_ID}/${id}`, { method: 'DELETE' });
+  loadQueue();
+  location.reload();
+}
+
+loadQueue();
 
 // Manual token form
 document.getElementById('manualTokenForm').addEventListener('submit', async e => {

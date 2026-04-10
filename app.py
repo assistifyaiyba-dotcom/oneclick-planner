@@ -190,6 +190,10 @@ def daily_scheduler():
 def index():
     return render_template("index.html")
 
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
 @app.route("/new")
 def new_account():
     user_id = str(uuid.uuid4())[:8]

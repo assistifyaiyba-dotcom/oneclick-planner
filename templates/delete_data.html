@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delete My Data — One-Click Planner</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: #fff; color: #111; min-height: 100vh;
+           display: flex; align-items: center; justify-content: center; }
+    .container { max-width: 480px; padding: 40px 24px; text-align: center; }
+    h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 12px; }
+    p { color: #666; margin-bottom: 24px; line-height: 1.6; }
+    input { width: 100%; padding: 14px 16px; border: 1.5px solid #ddd; border-radius: 10px;
+            font-size: 1rem; margin-bottom: 16px; outline: none; }
+    input:focus { border-color: #111; }
+    button { width: 100%; padding: 14px; background: #c0392b; color: #fff;
+             border: none; border-radius: 10px; font-size: 1rem; font-weight: 600;
+             cursor: pointer; }
+    button:hover { opacity: .85; }
+    .success { background: #e8f5e9; color: #2e7d32; padding: 16px; border-radius: 10px; margin-bottom: 20px; }
+    .error { background: #fdecea; color: #c0392b; padding: 16px; border-radius: 10px; margin-bottom: 20px; }
+    .back { display: inline-block; margin-top: 20px; color: #888; font-size: .9rem; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Delete My Data</h1>
+  <p>Enter your User ID to permanently delete all your data from One-Click Planner, including your access tokens, scheduled videos, and account settings.</p>
+
+  {% if success == true %}
+    <div class="success">All data for User ID <strong>{{ user_id }}</strong> has been permanently deleted.</div>
+    <a href="/" class="back">← Back to homepage</a>
+  {% elif success == false %}
+    <div class="error">{{ error }}</div>
+    <form method="POST">
+      <input type="text" name="user_id" placeholder="Your User ID (e.g. d03bb413)" required>
+      <button type="submit">Delete All My Data</button>
+    </form>
+    <a href="/" class="back">← Back to homepage</a>
+  {% else %}
+    <form method="POST">
+      <input type="text" name="user_id" placeholder="Your User ID (e.g. d03bb413)" required>
+      <button type="submit">Delete All My Data</button>
+    </form>
+    <p style="margin-top:16px;font-size:.85rem;color:#aaa;">Your User ID can be found in the URL of your dashboard: /dashboard/<strong>YOUR-ID</strong></p>
+    <a href="/" class="back">← Back to homepage</a>
+  {% endif %}
+</div>
+</body>
+</html>

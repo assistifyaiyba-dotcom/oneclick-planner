@@ -194,6 +194,19 @@ def index():
 def privacy():
     return render_template("privacy.html")
 
+@app.route("/delete-data", methods=["GET", "POST"])
+def delete_data():
+    if request.method == "POST":
+        user_id = request.form.get("user_id", "").strip()
+        if user_id:
+            conn = get_db(); cur = conn.cursor()
+            cur.execute("DELETE FROM queue WHERE user_id=%s", (user_id,))
+            cur.execute("DELETE FROM users WHERE id=%s", (user_id,))
+            conn.commit(); cur.close(); conn.close()
+            return render_template("delete_data.html", success=True, user_id=user_id)
+        return render_template("delete_data.html", success=False, error="Please enter a valid User ID.")
+    return render_template("delete_data.html", success=None)
+
 @app.route("/new")
 def new_account():
     user_id = str(uuid.uuid4())[:8]

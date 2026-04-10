@@ -449,7 +449,7 @@ def admin_users():
     conn = get_db(); cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cur.execute("SELECT id, account_name, ig_username, fb_page_name, created_at FROM users")
     rows = cur.fetchall(); cur.close(); conn.close()
-    return jsonify([dict(r) for r in rows])
+    return jsonify([{k: str(v) for k, v in dict(r).items()} for r in rows])
 
 @app.route("/disconnect/<user_id>/<platform>")
 def disconnect(user_id, platform):

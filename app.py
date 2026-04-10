@@ -447,7 +447,7 @@ def queue_delete(user_id, item_id):
 @app.route("/admin/users")
 def admin_users():
     conn = get_db(); cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute("SELECT id, account_name, ig_username, fb_page_name, created_at FROM users")
+    cur.execute("SELECT id, name, ig_username, fb_page_name, created_at FROM users")
     rows = cur.fetchall(); cur.close(); conn.close()
     return jsonify([{k: str(v) for k, v in dict(r).items()} for r in rows])
 

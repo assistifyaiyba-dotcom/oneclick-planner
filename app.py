@@ -3,12 +3,14 @@ One-Click Content Planner
 Kunde verbindet Instagram/Facebook/TikTok per OAuth → lädt Videos hoch → plant 30 Tage
 """
 
-import os, uuid, sqlite3, json, time, threading, requests, urllib.parse
+import os, uuid, json, time, threading, requests, urllib.parse
 from datetime import datetime, timedelta
 from flask import Flask, request, redirect, jsonify, render_template, session, url_for
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
+import psycopg2
+import psycopg2.extras
 import cloudinary, cloudinary.api, cloudinary.uploader
 import anthropic
 
@@ -27,55 +29,63 @@ CLOUDINARY_CLOUD  = os.environ.get("CLOUDINARY_CLOUD_NAME", "dlv8ebddq")
 CLOUDINARY_KEY    = os.environ.get("CLOUDINARY_API_KEY", "837591974475139")
 CLOUDINARY_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "1wHQz08D45SYbFg7vuecfVMaOac")
 ANTHROPIC_KEY     = os.environ.get("ANTHROPIC_API_KEY", "")
-DB_PATH           = os.environ.get("DB_PATH", "/app/data/oneclick.db")
+DATABASE_URL      = os.environ.get("DATABASE_URL", "")
 # ──────────────────────────────────────────────────────────────────────────────
 
 cloudinary.config(cloud_name=CLOUDINARY_CLOUD, api_key=CLOUDINARY_KEY, api_secret=CLOUDINARY_SECRET)
 
 # ─── DATABASE ─────────────────────────────────────────────────────────────────
 def get_db():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(DATABASE_URL)
+    conn.autocommit = False
     return conn
 
 def init_db():
-    with get_db() as db:
-        db.execute("""CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            ig_user_id TEXT, ig_token TEXT, ig_username TEXT,
-            fb_page_id TEXT, fb_page_token TEXT, fb_page_name TEXT,
-            tiktok_token TEXT, tiktok_username TEXT,
-            post_time TEXT DEFAULT '19:00',
-            caption_mode TEXT DEFAULT 'fixed',
-            caption_text TEXT DEFAULT '',
-            platforms TEXT DEFAULT 'ig,fb'
-        )""")
-        db.execute("""CREATE TABLE IF NOT EXISTS queue (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT,
-            cloudinary_url TEXT,
-            public_id TEXT,
-            post_order INTEGER,
-            posted INTEGER DEFAULT 0,
-            posted_at TEXT
-        )""")
-        db.commit()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        ig_user_id TEXT, ig_token TEXT, ig_username TEXT,
+        fb_page_id TEXT, fb_page_token TEXT, fb_page_name TEXT,
+        tiktok_token TEXT, tiktok_username TEXT,
+        post_time TEXT DEFAULT '19:00',
+        caption_mode TEXT DEFAULT 'fixed',
+        caption_text TEXT DEFAULT '',
+        platforms TEXT DEFAULT 'ig,fb'
+    )""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS queue (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT,
+        cloudinary_url TEXT,
+        public_id TEXT,
+        post_order INTEGER,
+        posted INTEGER DEFAULT 0,
+        posted_at TEXT
+    )""")
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def get_user(user_id):
-    with get_db() as db:
-        return db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("SELECT * FROM users WHERE id=%s", (user_id,))
+    row = cur.fetchone()
+    cur.close(); conn.close()
+    return dict(row) if row else None
 
 def update_user(user_id, **kwargs):
     if not kwargs:
         return
-    fields = ", ".join(f"{k}=?" for k in kwargs)
+    fields = ", ".join(f"{k}=%s" for k in kwargs)
     values = list(kwargs.values()) + [user_id]
-    with get_db() as db:
-        db.execute(f"UPDATE users SET {fields} WHERE id=?", values)
-        db.commit()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(f"UPDATE users SET {fields} WHERE id=%s", values)
+    conn.commit()
+    cur.close(); conn.close()
 
 # ─── AI CAPTION ───────────────────────────────────────────────────────────────
 def generate_caption(user_name: str) -> str:
@@ -136,10 +146,11 @@ def run_posts_for_user(user):
     caption  = generate_caption(user["name"]) if user["caption_mode"] == "ai" else user["caption_text"]
     platforms= (user["platforms"] or "").split(",")
 
-    with get_db() as db:
-        video = db.execute(
-            "SELECT * FROM queue WHERE user_id=? AND posted=0 ORDER BY post_order LIMIT 1",
-            (user_id,)).fetchone()
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("SELECT * FROM queue WHERE user_id=%s AND posted=0 ORDER BY post_order LIMIT 1", (user_id,))
+    video = cur.fetchone()
+    cur.close(); conn.close()
     if not video:
         print(f"[{user['name']}] Queue leer")
         return
@@ -158,17 +169,21 @@ def run_posts_for_user(user):
     print(f"[{user['name']}] IG={'✓' if ig_ok else '✗'} FB={'✓' if fb_ok else '✗'} TT={'✓' if tt_ok else '✗'}")
 
     if ig_ok or fb_ok or tt_ok:
-        with get_db() as db:
-            db.execute("UPDATE queue SET posted=1, posted_at=? WHERE id=?",
-                      (datetime.now().isoformat(), video["id"]))
-            db.commit()
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("UPDATE queue SET posted=1, posted_at=%s WHERE id=%s",
+                    (datetime.now().isoformat(), video["id"]))
+        conn.commit(); cur.close(); conn.close()
 
 def daily_scheduler():
     now_hour = datetime.now(BERLIN).strftime("%H:%M")
-    with get_db() as db:
-        users = db.execute("SELECT * FROM users WHERE post_time=?", (now_hour,)).fetchall()
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("SELECT * FROM users WHERE post_time=%s", (now_hour,))
+    users = cur.fetchall()
+    cur.close(); conn.close()
     for user in users:
-        threading.Thread(target=run_posts_for_user, args=(user,), daemon=True).start()
+        threading.Thread(target=run_posts_for_user, args=(dict(user),), daemon=True).start()
 
 # ─── ROUTES ───────────────────────────────────────────────────────────────────
 @app.route("/")
@@ -178,9 +193,10 @@ def index():
 @app.route("/new")
 def new_account():
     user_id = str(uuid.uuid4())[:8]
-    with get_db() as db:
-        db.execute("INSERT INTO users (id, name) VALUES (?, ?)", (user_id, f"User {user_id}"))
-        db.commit()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO users (id, name) VALUES (%s, %s)", (user_id, f"User {user_id}"))
+    conn.commit(); cur.close(); conn.close()
     return redirect(f"/dashboard/{user_id}")
 
 @app.route("/dashboard/<user_id>")
@@ -188,12 +204,15 @@ def dashboard(user_id):
     user = get_user(user_id)
     if not user:
         return redirect("/")
-    with get_db() as db:
-        total   = db.execute("SELECT COUNT(*) FROM queue WHERE user_id=?", (user_id,)).fetchone()[0]
-        pending = db.execute("SELECT COUNT(*) FROM queue WHERE user_id=? AND posted=0", (user_id,)).fetchone()[0]
-        posted  = total - pending
-    return render_template("dashboard.html", user=dict(user),
-                           total=total, pending=pending, posted=posted)
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM queue WHERE user_id=%s", (user_id,))
+    total = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM queue WHERE user_id=%s AND posted=0", (user_id,))
+    pending = cur.fetchone()[0]
+    cur.close(); conn.close()
+    posted = total - pending
+    return render_template("dashboard.html", user=user, total=total, pending=pending, posted=posted)
 
 # ─── INSTAGRAM OAUTH ──────────────────────────────────────────────────────────
 @app.route("/instagram/auth/<user_id>")
@@ -332,10 +351,11 @@ def upload_videos(user_id):
     files   = request.files.getlist("videos")
     results = []
 
-    with get_db() as db:
-        current_max = db.execute(
-            "SELECT COALESCE(MAX(post_order), 0) FROM queue WHERE user_id=?",
-            (user_id,)).fetchone()[0]
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COALESCE(MAX(post_order), 0) FROM queue WHERE user_id=%s", (user_id,))
+    current_max = cur.fetchone()[0]
+    cur.close(); conn.close()
 
     for i, file in enumerate(files):
         order = current_max + i + 1
@@ -347,11 +367,12 @@ def upload_videos(user_id):
                 context=f"ig_posted=false|post_order={order}",
                 tags=[f"user_{user_id}"]
             )
-            with get_db() as db:
-                db.execute(
-                    "INSERT INTO queue (user_id, cloudinary_url, public_id, post_order) VALUES (?,?,?,?)",
-                    (user_id, result["secure_url"], result["public_id"], order))
-                db.commit()
+            conn = get_db()
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO queue (user_id, cloudinary_url, public_id, post_order) VALUES (%s,%s,%s,%s)",
+                (user_id, result["secure_url"], result["public_id"], order))
+            conn.commit(); cur.close(); conn.close()
             results.append({"file": file.filename, "status": "ok", "order": order})
         except Exception as e:
             results.append({"file": file.filename, "status": "error", "error": str(e)})
@@ -397,24 +418,30 @@ def post_now(user_id):
 
 @app.route("/queue/<user_id>")
 def queue_status(user_id):
-    with get_db() as db:
-        total   = db.execute("SELECT COUNT(*) FROM queue WHERE user_id=?", (user_id,)).fetchone()[0]
-        pending = db.execute("SELECT COUNT(*) FROM queue WHERE user_id=? AND posted=0", (user_id,)).fetchone()[0]
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM queue WHERE user_id=%s", (user_id,))
+    total = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM queue WHERE user_id=%s AND posted=0", (user_id,))
+    pending = cur.fetchone()[0]
+    cur.close(); conn.close()
     return jsonify({"total": total, "pending": pending, "posted": total - pending})
 
 @app.route("/queue_list/<user_id>")
 def queue_list(user_id):
-    with get_db() as db:
-        items = db.execute(
-            "SELECT id, cloudinary_url, post_order, posted, posted_at FROM queue WHERE user_id=? ORDER BY post_order",
-            (user_id,)).fetchall()
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("SELECT id, cloudinary_url, post_order, posted, posted_at FROM queue WHERE user_id=%s ORDER BY post_order", (user_id,))
+    items = cur.fetchall()
+    cur.close(); conn.close()
     return jsonify([dict(i) for i in items])
 
 @app.route("/queue_delete/<user_id>/<int:item_id>", methods=["DELETE"])
 def queue_delete(user_id, item_id):
-    with get_db() as db:
-        db.execute("DELETE FROM queue WHERE id=? AND user_id=?", (item_id, user_id))
-        db.commit()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM queue WHERE id=%s AND user_id=%s", (item_id, user_id))
+    conn.commit(); cur.close(); conn.close()
     return jsonify({"status": "deleted"})
 
 @app.route("/disconnect/<user_id>/<platform>")

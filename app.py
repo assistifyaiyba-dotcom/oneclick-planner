@@ -444,6 +444,13 @@ def queue_delete(user_id, item_id):
     conn.commit(); cur.close(); conn.close()
     return jsonify({"status": "deleted"})
 
+@app.route("/admin/users")
+def admin_users():
+    conn = get_db(); cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("SELECT id, account_name, ig_username, fb_page_name, created_at FROM users")
+    rows = cur.fetchall(); cur.close(); conn.close()
+    return jsonify([dict(r) for r in rows])
+
 @app.route("/disconnect/<user_id>/<platform>")
 def disconnect(user_id, platform):
     fields = {"instagram": {"ig_token": None, "ig_user_id": None, "ig_username": None},

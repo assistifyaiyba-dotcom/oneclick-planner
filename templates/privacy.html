@@ -53,17 +53,35 @@
   </ul>
   <p>We only request the minimum permissions necessary to perform scheduling and posting. We do not read your messages, contacts, or personal profile data.</p>
 
-  <h2>4. Data Retention</h2>
+  <h2>4. TikTok API — Data Access & Usage</h2>
+  <p>One-Click Planner integrates with the TikTok for Developers API to allow users to schedule and publish video content on TikTok. This integration requires explicit user authorization via TikTok's official OAuth 2.0 flow.</p>
+  <p>We access the following TikTok permissions:</p>
+  <ul>
+    <li><strong>user.info.basic:</strong> To retrieve your TikTok display name and profile picture for display within the app.</li>
+    <li><strong>video.publish:</strong> To publish videos to your TikTok account at your scheduled time.</li>
+    <li><strong>video.upload:</strong> To upload video files to TikTok's servers for publishing.</li>
+  </ul>
+  <p>TikTok data we store and process:</p>
+  <ul>
+    <li>Your TikTok OAuth access token (encrypted, used only to publish videos on your behalf)</li>
+    <li>Your TikTok username (displayed in your dashboard)</li>
+    <li>Video metadata such as title and privacy level (set by you at time of scheduling)</li>
+  </ul>
+  <p>We do <strong>not</strong>: read your TikTok messages, followers, or analytics; access your TikTok account for any purpose other than publishing videos you have scheduled; share your TikTok data with third parties; use your TikTok data for advertising.</p>
+  <p>To revoke access, disconnect TikTok from your One-Click Planner dashboard. You can also revoke access directly via TikTok's settings under "Connected Apps". Upon disconnection, all TikTok tokens are immediately deleted from our system.</p>
+  <p>One-Click Planner is not affiliated with, endorsed by, or sponsored by TikTok Inc. or ByteDance Ltd. Use of TikTok features is subject to <a href="https://www.tiktok.com/legal/privacy-policy" target="_blank">TikTok's Privacy Policy</a> and <a href="https://www.tiktok.com/legal/terms-of-service" target="_blank">TikTok's Terms of Service</a>.</p>
+
+  <h2>5. Data Retention</h2>
   <ul>
     <li>Access tokens are stored securely in our database and used only for posting.</li>
     <li>You can disconnect your accounts at any time from the dashboard, which deletes your tokens from our system.</li>
     <li>Uploaded videos are stored in Cloudinary and deleted from the queue after posting.</li>
   </ul>
 
-  <h2>5. Data Security</h2>
+  <h2>6. Data Security</h2>
   <p>We use industry-standard security practices to protect your data. Access tokens are stored in an encrypted PostgreSQL database hosted on Railway. We do not log or expose tokens in any public interface.</p>
 
-  <h2>6. Third-Party Services</h2>
+  <h2>7. Third-Party Services</h2>
   <p>We use the following third-party services:</p>
   <ul>
     <li><strong>Meta (Facebook/Instagram Graph API)</strong> — for posting content</li>
@@ -73,7 +91,7 @@
     <li><strong>Anthropic Claude</strong> — for AI caption generation (optional)</li>
   </ul>
 
-  <h2>7. Your Rights</h2>
+  <h2>8. Your Rights</h2>
   <p>You have the right to:</p>
   <ul>
     <li>Disconnect your social media accounts at any time from the dashboard.</li>
@@ -81,12 +99,12 @@
     <li>Access the data we store about you upon request.</li>
   </ul>
 
-  <h2>8. Contact</h2>
+  <h2>9. Contact</h2>
   <p>If you have any questions about this Privacy Policy, please contact us:</p>
   <p><strong>One-Click Planner</strong><br>
   Email: <a href="mailto:info@assistify.de">info@assistify.de</a></p>
 
-  <h2>9. Changes to This Policy</h2>
+  <h2>10. Changes to This Policy</h2>
   <p>We may update this Privacy Policy from time to time. We will notify users of any significant changes by updating the date at the top of this page.</p>
 </div>
 </body>
